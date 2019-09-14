@@ -1,0 +1,35 @@
+
+body{
+  background-color: rgb(0, 0, 0);
+  color:rgb(255, 255, 255);
+  font-family: 'Libre Barcode 39 Text', cursive;
+}
+
+h2{
+  text-align: center;
+  font-size: 2em;
+  color: rgb(255, 232, 38);
+}
+h3, h4{
+  text-align: center;
+  font-size: 1.5em;
+}
+
+#exDiv{
+  text-align: center;
+  font-size: 5em;
+  font-family: monospace;
+  font-weight: bold;
+  height: 50px
+}
+
+#reflDiv{
+  width: 300px;
+  font-size: 30px;
+  position: relative;
+}
+
+
+.flip{
+  transform: scale(1, -1);
+}
