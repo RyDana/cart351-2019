@@ -2,6 +2,9 @@
 body{
   background-color: rgb(0, 0, 0);
   color:rgb(255, 255, 255);
+}
+
+header{
   font-family: 'Libre Barcode 39 Text', cursive;
 }
 
@@ -15,21 +18,124 @@ h3, h4{
   font-size: 1.5em;
 }
 
-#exDiv{
-  text-align: center;
-  font-size: 5em;
-  font-family: monospace;
-  font-weight: bold;
-  height: 50px
+#container * {
+  display: inline-block;
+  vertical-align:top;
+  margin: 30px;
+
 }
 
-#reflDiv{
+#exDiv{
   width: 300px;
-  font-size: 30px;
-  position: relative;
+  vertical-align: top;
+  text-align: center;
+  font-size: 300px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 1000;
+  height: 500px;
 }
 
 
 .flip{
-  transform: scale(1, -1);
+  transform: scale(1, 1);
+}
+
+#reflDiv{
+  width: 300px;
+  font-size: 60px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 1000;
+  position: relative;
+  /* mix-blend-mode: difference; */
+}
+
+#prjctDiv{
+  width: 300px;
+  height: 500px;
+  perspective: 400px;
+}
+
+.cube {
+  width: 300px;
+  height: 300px;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: translateZ(-150px);
+  /* transition: transform 1s; */
+  /* mix-blend-mode: difference; */
+  -webkit-animation: spin 2s linear infinite;
+  -moz-animation: spin 2s linear infinite;
+  animation: spin 2s linear infinite;
+}
+
+@-moz-keyframes spin {
+  100% {
+    -moz-transform: translateZ(-150px) rotateX(360deg) rotateY(360deg);
+  }
+}
+
+@-webkit-keyframes spin {
+  100% {
+    -webkit-transform: translateZ(-150px) rotateX(360deg) rotateY(360deg);
+  }
+}
+
+@keyframes spin {
+  100% {
+    -webkit-transform: translateZ(-150px) rotateX(360deg) rotateY(360deg);
+    transform: translateZ(-150px) rotateX(360deg) rotateY(360deg);
+  }
+}
+
+.cube__face {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  /* border: 1px solid white; */
+  line-height: 300px;
+  font-size: 300px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 1000;
+  color: white;
+  background: black;
+  text-align: center;
+}
+
+.cube__face--front {
+  transform: rotateY(0deg) translateZ(150px);
+}
+
+.cube__face--right {
+  transform: rotateY(90deg) translateZ(150px);
+}
+
+.cube__face--back {
+  transform: rotateY(180deg) translateZ(150px);
+}
+
+.cube__face--left {
+  transform: rotateY(-90deg) translateZ(150px);
+}
+
+.cube__face--top {
+  transform: rotateX(90deg) translateZ(150px);
+}
+
+.cube__face--bottom {
+  transform: rotateX(-90deg) translateZ(150px);
+}
+
+#presDiv{
+  width: 300px;
+  font-size: 60px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 1000;
+  position: relative;
+  color: white;
+  isolation: isolate;
+  color: black;
+}
+
+#presDiv * {
+  mix-blend-mode: multiply;
 }
