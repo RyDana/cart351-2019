@@ -1,14 +1,22 @@
-window.onload =function(){
+// Dana RYASHY
+// CART 351
+// Personal website
+//
+// Sources:
+// Cube animation was taken from David DeSandro:
+// URL: https://3dtransforms.desandro.com/cube
+//
+// Drop down menu code was taken from W3Schools:
+// URL: https://www.w3schools.com/howto/howto_js_dropdown.asp
 
-};
-
-
+//Starts animations once the DOM has loaded
 document.addEventListener('DOMContentLoaded', function(event) {
   animateExDiv();
   animateReflDiv();
   animatePresDiv();
 });
 
+//Animates the "EXAMPLES"
 function animateExDiv(){
   //variables necessary for 'exercises' div animation
   let exString = 'EXERCISES';
@@ -29,6 +37,7 @@ function animateExDiv(){
   }, frameLength);
 }
 
+//Animates the "REFLECTIONS"
 function animateReflDiv(){
   let reflString = "REFLECTIONS"
   let reflDiv = document.getElementById("reflDiv");
@@ -53,7 +62,7 @@ function animateReflDiv(){
 
     let swingAmounts = swingAmountsMax - i;
     ballParameters.swingFrequency = swingAmounts/(lap/10);
-    console.log(ballParameters.swingFrequency);
+    //console.log(ballParameters.swingFrequency);
     ballArray.push(ball);
 
     let pos = 0;
@@ -61,7 +70,7 @@ function animateReflDiv(){
     let animation = setInterval(frame,frameLength);
     function frame(){
       //y(t)=Asin(2πft+φ)
-      pos = ((divWidth-ballWidth)/2)*Math.sin(2*Math.PI*ballParameters.swingFrequency*ballParameters.t) + (divWidth/2 - ballWidth*2);
+      pos = ((divWidth-(ballWidth*2))/2)*Math.sin(2*Math.PI*ballParameters.swingFrequency*ballParameters.t) + (divWidth/2 - ballWidth);
       //console.log("position " + pos + " time " + ballParameters.t);
       ballParameters.t ++;
       ball.style.left = pos + "px";
@@ -70,6 +79,7 @@ function animateReflDiv(){
   reflDiv.style.height = (reflString.length*ballWidth) +10 + "px";
 }
 
+//Animates the "PRESENTATION"
 function animatePresDiv(){
   let presDiv = document.getElementById('presDiv');
   let presString = "PRESENTATION"
@@ -112,4 +122,24 @@ function animatePresDiv(){
     t++;
     blind.style.top = blindPosTop + "px";
   },10);
+}
+
+//regulates the menu dropdown
+function toggleDrop() {
+  console.log(event.target.id + "Drop");
+  document.getElementById(event.target.id + "Drop").classList.toggle("show");
+}
+
+//closes menu dropdowns when clicked outside of it
+window.onclick = function(event) {
+  if (!event.target.matches('.btnDrop')) {
+    var dropdowns = document.getElementsByClassName("dropdown-content");
+    var i;
+    for (i = 0; i < dropdowns.length; i++) {
+      var openDropdown = dropdowns[i];
+      if (openDropdown.classList.contains('show')) {
+        openDropdown.classList.remove('show');
+      }
+    }
+  }
 }
