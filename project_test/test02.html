@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <!--<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">-->
+  <title>Three.js - Responsive HD-DPI</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+    }
+
+    #c {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+</body>
+<script src="https://threejs.org/build/three.js"></script>
+<script src='https://stemkoski.github.io/Three.js/js/shaders/FresnelShader.js'></script>
+<script type="module">
+  // import * as THREE from 'https://unpkg.com/three@0.108.0/build/three.module.js';
+  import {OrbitControls} from 'https://threejsfundamentals.org/threejs/resources/threejs/r108/examples/jsm/controls/OrbitControls.js';
+  import {GUI} from 'https://threejsfundamentals.org/threejs/../3rdparty/dat.gui.module.js';
+
+
+  function main() {
+    const canvas = document.querySelector('#c');
+    const renderer = new THREE.WebGLRenderer({canvas, antialias: true });
+    renderer.shadowMap.enabled = true;
+
+    const fov = 75;
+    const aspect = 2;  // the canvas default
+    const near = 0.1;
+    const far = 30;
+    const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    camera.position.set(0, 0, 2);
+
+    const scene = new THREE.Scene();
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    const color = 0xFFFFFF;
+    const intensity = 1;
+    const light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(-1, 2, 4);
+    scene.add(light);
+
+    class ColorGUIHelper {
+      constructor(object, prop) {
+        this.object = object;
+        this.prop = prop;
+      }
+      get value() {
+        return `#${this.object[this.prop].getHexString()}`;
+      }
+      set value(hexString) {
+        this.object[this.prop].set(hexString);
+      }
+    }
+
+    const gui = new GUI();
+    gui.addColor(new ColorGUIHelper(light, 'color'), 'value').name('color');
+    gui.add(light, 'intensity', 0, 2, 0.01);
+
+    const boxWidth = 1;
+    const boxHeight = 1;
+    const boxDepth = 1;
+    const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+
+    ////////////
+    // CUSTOM //
+    ////////////
+
+     let refractSphereCamera = new THREE.CubeCamera( 0.1, 5000, 512 );
+    scene.add( refractSphereCamera );
+
+    var fShader = THREE.FresnelShader;
+
+    var fresnelUniforms =
+    {
+      "mRefractionRatio": { type: "f", value: 1.02 },
+      "mFresnelBias": 	{ type: "f", value: 0.1 },
+      "mFresnelPower": 	{ type: "f", value: 2.0 },
+      "mFresnelScale": 	{ type: "f", value: 1.0 },
+      "tCube": 			{ type: "t", value: refractSphereCamera.renderTarget } //  textureCube }
+    };
+
+    // create custom material for the shader
+    var customMaterial = new THREE.ShaderMaterial(
+    {
+        uniforms: 		fresnelUniforms,
+      vertexShader:   fShader.vertexShader,
+      fragmentShader: fShader.fragmentShader
+    }   );
+
+    const cube = new THREE.Mesh(geometry, customMaterial);
+    scene.add(cube);
+
+    const cubeTwo = new THREE.Mesh(geometry, customMaterial);
+    cubeTwo.rotation.y = 90;
+    cubeTwo.scale.set(0.99, 0.99, 0.99);
+    scene.add(cubeTwo);
+
+    const cubeThree = new THREE.Mesh(geometry, customMaterial);
+    cubeThree.rotation.x = 90;
+    cubeThree.scale.set(0.99, 0.99, 0.99);
+    scene.add(cubeThree);
+    //refractSphereCamera.position = cube.position;
+
+    // function makeInstance(geometry, color, x) {
+    //   const material = new THREE.MeshPhongMaterial({color});
+    //
+    //   const cube = new THREE.Mesh(geometry, material);
+    //   scene.add(cube);
+    //
+    //   cube.position.x = x;
+    //
+    //   return cube;
+    // }
+    //
+    // const cubes = [
+    //   makeInstance(geometry, 0x44aa88,  0),
+    //   makeInstance(geometry, 0x8844aa, -2),
+    //   makeInstance(geometry, 0xaa8844,  2),
+    // ];
+
+    const planeSize = 40;
+    let texture = new THREE.TextureLoader().load('https://stemkoski.github.io/Three.js/images/checkerboard.jpg',
+      function(texture){
+        // this code makes the texture repeat
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.magFilter = THREE.NearestFilter;
+        texture.repeat.set( planeSize/2, planeSize/2 );
+      });
+    //only phong materials have bumpmaps
+    const planeMat = new THREE.MeshPhongMaterial( {map: texture, shininess: 0, side: THREE.DoubleSide} );
+
+    const planeGeo = new THREE.PlaneBufferGeometry(planeSize, planeSize);
+    const mesh = new THREE.Mesh(planeGeo, planeMat);
+    mesh.rotation.x = Math.PI * -.5;
+    mesh.position.y = -2;
+    scene.add(mesh);
+
+
+
+    function resizeRendererToDisplaySize(renderer) {
+      const canvas = renderer.domElement;
+      const pixelRatio = window.devicePixelRatio;
+      const width  = canvas.clientWidth  * pixelRatio | 0;
+      const height = canvas.clientHeight * pixelRatio | 0;
+      const needResize = canvas.width !== width || canvas.height !== height;
+      if (needResize) {
+        renderer.setSize(width, height, false);
+      }
+      return needResize;
+    }
+
+    function render(time) {
+      time *= 0.001;
+
+      if (resizeRendererToDisplaySize(renderer)) {
+        const canvas = renderer.domElement;
+        camera.aspect = canvas.clientWidth / canvas.clientHeight;
+        camera.updateProjectionMatrix();
+      }
+
+      // cubes.forEach((cube, ndx) => {
+      //   const speed = 1 + ndx * .1;
+      //   const rot = time * speed;
+      //   cube.rotation.x = rot;
+      //   cube.rotation.y = rot;
+      // });
+
+      cube.visible = false;
+      refractSphereCamera.position.copy( cube.position );
+      refractSphereCamera.update( renderer, scene );
+    	cube.visible = true;
+
+      renderer.render(scene, camera);
+
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  }
+
+  main();
+</script>
+
+</html>

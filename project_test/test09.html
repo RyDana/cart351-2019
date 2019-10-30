@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - materials - cube reflection / refraction [Walt]</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+    </style>
+	</head>
+	<body>
+		<canvas id="debug-canvas" width="25" height="25"></canvas>
+    <script src="https://threejs.org/build/three.js"></script>
+		<script type="text/javascript" src="lib/dat.gui.min.js"></script>
+		<script src='https://vr.josh.earth/webxr-experiments/geometry/node_modules/simplex-noise/simplex-noise.js'></script>
+		<div id="container"></div>
+		<script type="module">
+			//import * as THREE from 'https://unpkg.com/three@0.108.0/build/three.module.js';
+			import Stats from 'https://threejsfundamentals.org/threejs/resources/threejs/r108/examples/jsm/libs/stats.module.js';
+			import { OrbitControls } from 'https://threejsfundamentals.org/threejs/resources/threejs/r108/examples/jsm/controls/OrbitControls.js';
+			import { OBJLoader } from 'https://threejsfundamentals.org/threejs/resources/threejs/r108/examples/jsm/loaders/OBJLoader.js';
+
+			var container, stats, controls={}, gem, metal;
+			var camera, cubeCamera2,cubeCamera3, reflectionCube, refractionCube, scene, renderer;
+			var c_mesh_color;
+			let simplex = new SimplexNoise(4);
+
+			//GUI
+			controls = { color: "#00FFBC", size: 1};
+			console.log(controls);
+			var gui = new dat.GUI();
+			var c_mesh_size = gui.add(controls, 'size', 0,2);
+			var c_mesh_color = gui.addColor(controls, 'color', 0,100);
+
+			init();
+			addObjects();
+			animate();
+
+
+			function init() {
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+				//cubemap
+				var path = 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/cube/skyboxsun25deg/';
+				//var path = 'https://raw.githubusercontent.com/timoxley/threejs/master/examples/textures/cube/SwedishRoyalCastle/';
+				var format = '.jpg';
+				var urls = [
+					path + 'px' + format, path + 'nx' + format,
+					path + 'py' + format, path + 'ny' + format,
+					path + 'pz' + format, path + 'nz' + format
+				];
+				reflectionCube = new THREE.CubeTextureLoader().load( urls );
+				reflectionCube.format = THREE.RGBFormat;
+				refractionCube = new THREE.CubeTextureLoader().load( urls );
+				refractionCube.mapping = THREE.CubeRefractionMapping;
+				refractionCube.format = THREE.RGBFormat;
+				scene = new THREE.Scene();
+				scene.background = reflectionCube;
+        //cameras
+        camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 5000);
+        camera.position.z = 30;
+
+        cubeCamera2 = new THREE.CubeCamera( 1, 1000, 256 );
+        cubeCamera2.renderTarget.texture.generateMipmaps = true;
+        cubeCamera2.renderTarget.texture.minFilter = THREE.LinearMipmapLinearFilter;
+        scene.add( cubeCamera2 );
+
+				cubeCamera3 = new THREE.CubeCamera( 1, 1000, 256 );
+				cubeCamera3.renderTarget.texture.generateMipmaps = true;
+				cubeCamera3.renderTarget.texture.minFilter = THREE.LinearMipmapLinearFilter;
+				scene.add( cubeCamera3 );
+				//renderer
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+				//controls
+				var controls = new OrbitControls( camera, renderer.domElement );
+				controls.enableZoom = true;
+				controls.enablePan = false;
+				controls.minPolarAngle = Math.PI / 4;
+				controls.maxPolarAngle = Math.PI / 1.5;
+				//stats
+				stats = new Stats();
+				container.appendChild( stats.dom );
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				const tex = generateTexture()
+				const mesh = generateMeshFromTexture(tex)
+				scene.add(mesh)
+				//obj = mesh
+			}
+
+			function addObjects(){
+
+				addIco(2);
+				gem = addIco(1);
+				metal = addTorus();
+
+				// addIco(2);
+				// if (Math.random() <0.7){
+				// 	 gem = addIco(1);
+				// 	 console.log(gem);
+				// 	if(Math.random() < 0.5){
+				// 		metal = addTorus();
+				// 	}
+				// }
+				addLights();
+			}
+
+			function addIco(choice){
+        var ship = new THREE.Object3D();
+				if (choice === 1){
+					console.log(controls.color);
+					var mat = new THREE.MeshLambertMaterial( { color: controls.color, side: THREE.DoubleSide, envMap: cubeCamera2.renderTarget.texture, refractionRatio: 0.55 } );
+
+					c_mesh_color.onChange(function(){
+					  ship.material = new THREE.MeshLambertMaterial( { color: controls.color, side: THREE.DoubleSide, envMap: cubeCamera2.renderTarget.texture, refractionRatio: 0.55 } );
+					});
+				} else{
+					let bumpMap = new THREE.TextureLoader().load('http://www.textures4photoshop.com/tex/thumbs/rocky-mountain-texture-seamless-thumb31.jpg',
+						function(texture){
+							// this code makes the texture repeat
+						  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						  texture.repeat.set( 1, 1 );
+						});
+					let texture = new THREE.TextureLoader().load('http://www.textures4photoshop.com/tex/thumbs/rocky-mountain-texture-seamless-thumb31.jpg',
+						function(texture){
+							// this code makes the texture repeat
+						  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+						  texture.repeat.set( 1, 1 );
+						});
+					var mat = new THREE.MeshPhongMaterial( { color: 0x999999, map: texture,bumpMap: bumpMap, side: THREE.DoubleSide, shininess: 0} );
+				}
+				//var mat = new THREE.MeshLambertMaterial( { color: 0xffffff, envMap: reflectionCube } );
+				//var mat = new THREE.MeshNormalMaterial( { color: 0xffffff, side: THREE.FrontSide} );
+        var max = 2 + 15 * Math.random()
+        max *= 1.5;
+        for (var i = 0; i < max; i++) {
+            var geo = new THREE.TetrahedronGeometry(1, 3)
+						if(choice === 1){
+							var groz = .7;
+						} else {
+							var groz = .5
+						}
+
+            for (var j = 0; j < geo.vertices.length; j++) {
+                geo.vertices[j].x += (Math.random() - .5) * groz;
+                geo.vertices[j].y += (Math.random() - .5) * groz;
+                geo.vertices[j].z += (Math.random() - .5) * groz;
+            }
+            var mesh = new THREE.Mesh(geo, mat)
+            var roz = 10;
+            mesh.position.x = (Math.random() - .5) * roz;
+            mesh.position.y = (Math.random() / 2) * roz - 2;
+            mesh.position.z = (Math.random() - .5) * roz;
+            var ran = Math.random() * 1 + 1;
+            mesh.scale.set(ran, ran, ran);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            ship.add(mesh);
+
+            if (Math.random() < .9) {
+
+                var mesh2 = mesh.clone();
+								mesh2.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
+                mesh2.position.x = -mesh.position.x
+                ship.add(mesh2)
+
+                mesh.frustumCulled = false;
+                mesh2.frustumCulled = false;
+            }
+				}
+
+        // MERGE
+        var geom = new THREE.Geometry()
+        for (var i = 0; i < ship.children.length; i++) {
+            ship.children[i].updateMatrix();
+            geom.merge(ship.children[i].geometry, ship.children[i].matrix);
+        }
+        ship = new THREE.Mesh(geom, mat)
+        ship.frustumCulled = false;
+        ship.castShadow = true;
+        ship.receiveShadow = true;
+				ship.scale.set(controls.size,controls.size,controls.size);
+				c_mesh_size.onChange(function(){
+				  ship.scale.set(controls.size,controls.size,controls.size);
+				});
+
+        scene.add(ship);
+				return ship;
+			}
+
+			function addTorus(){
+				var ship = new THREE.Object3D();
+				var mat = new THREE.MeshLambertMaterial( { color: 0xffffff, envMap: cubeCamera3.renderTarget.texture, combine: THREE.MixOperation, reflectivity: 0.7} );
+				//var mat = new THREE.MeshLambertMaterial( { color: 0xffffff, side: THREE.DoubleSide, envMap: refractionCube, refractionRatio: 0.55 } );
+				//var mat = new THREE.MeshLambertMaterial( { color: 0xffffff, envMap: reflectionCube } );
+        var max = 3 + 15 * Math.random();
+        max *= 1.5;
+				for (var i = 0; i < max; i++) {
+						const radius = 1;
+						const tube = .5;
+						const radialSegments = 8;
+						const tubularSegments = 32;
+						var geo = new THREE.TorusKnotGeometry(radius, tube, tubularSegments, radialSegments);
+						var mesh = new THREE.Mesh(geo, mat)
+						var roz = 10;
+						mesh.position.x = (Math.random() - .5) * roz;
+						mesh.position.y = (Math.random() / 2) * roz - 2;
+						mesh.position.z = (Math.random() - .5) * roz;
+						mesh.rotation.x = (Math.random() - .5) * roz;
+						mesh.rotation.y = (Math.random() / 2) * roz - 2;
+						mesh.rotation.z = (Math.random() - .5) * roz;
+						var ran = Math.random() * 1 + 0.3;
+						mesh.scale.set(ran, ran, ran);
+						mesh.castShadow = true;
+						mesh.receiveShadow = true;
+						ship.add(mesh);
+
+						if (Math.random() < .9) {
+
+								var mesh2 = mesh.clone();
+								mesh2.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
+
+								mesh2.position.x = -mesh.position.x
+								ship.add(mesh2)
+
+								mesh.frustumCulled = false;
+								mesh2.frustumCulled = false;
+						}
+				}
+				scene.add(ship);
+				return ship;
+			}
+
+			function addLights(){
+				//lights
+				var ambient = new THREE.AmbientLight( 0xffffff, .3 );
+				scene.add( ambient );
+
+				var light = new THREE.PointLight(0xFFFFFF, 1);
+				/* position the light so it shines on the cube (x, y, z) */
+				light.position.set(0, 30, 0);
+				light.castShadow = true;
+
+				scene.add(light);
+
+			}
+
+
+			function map(val, smin, smax, emin, emax) {
+			    const t =  (val-smin)/(smax-smin)
+			    return (emax-emin)*t + emin
+			}
+			function noise(nx, ny) {
+			    // Re-map from -1.0:+1.0 to 0.0:1.0
+			    return map(simplex.noise2D(nx,ny),-1,1,0,1)
+			}
+			//stack some noisefields together
+			function octave(nx,ny,octaves) {
+			    let val = 0;
+			    let freq = 1;
+			    let max = 0;
+			    let amp = 1;
+			    for(let i=0; i<octaves; i++) {
+			        val += noise(nx*freq,ny*freq)*amp;
+			        max += amp;
+			        amp /= 2;
+			        freq  *= 2;
+			    }
+			    return val/max;
+			}
+
+			//generate grayscale image of noise
+			function generateTexture() {
+			    const canvas = document.getElementById('debug-canvas')
+			    const c = canvas.getContext('2d')
+			    c.fillStyle = 'black'
+			    c.fillRect(0,0,canvas.width, canvas.height)
+
+			    for(let i=0; i<canvas.width; i++) {
+			        for(let j=0; j<canvas.height; j++) {
+			            let v =  octave(i/canvas.width,j/canvas.height,16)
+			            const per = (100*v).toFixed(2)+'%'
+			            c.fillStyle = `rgb(${per},${per},${per})`
+			            c.fillRect(i,j,1,1)
+			        }
+			    }
+			    return c.getImageData(0,0,canvas.width,canvas.height)
+			}
+
+			function generateMeshFromTexture(data) {
+	        //make plane geometry
+	        const geo = new THREE.PlaneGeometry(data.width,data.height,data.width,data.height+1)
+
+
+	        //assign vert data from the canvas
+	        for(let j=0; j<data.height; j++) {
+	            for (let i = 0; i < data.width; i++) {
+	                const n =  (j*(data.height)  +i)
+	                const nn = (j*(data.height+1)+i)
+	                const col = data.data[n*4] // the red channel
+	                const v1 = geo.vertices[nn]
+	                v1.z = map(col,0,255,-10,10) //map from 0:255 to -10:10
+	                if(v1.z > 2.5) v1.z *= 1.3 //exaggerate the peaks
+	                v1.x += map(Math.random(),0,1,-0.5,0.5) //jitter x
+	                v1.y += map(Math.random(),0,1,-0.5,0.5) //jitter y
+	            }
+	        }
+	        //for every face
+	        geo.faces.forEach(f=>{
+	            //get three verts for the face
+	            const a = geo.vertices[f.a]
+	            const b = geo.vertices[f.b]
+	            const c = geo.vertices[f.c]
+
+	            //if average is below water, set to 0
+	            //alt: color transparent to show the underwater landscape
+	            const avgz = (a.z+b.z+c.z)/3
+	            if(avgz < 0) {
+	                a.z = 0
+	                b.z = 0
+	                c.z = 0
+	            }
+
+
+	            //assign colors based on the highest point of the face
+	            const max = Math.max(a.z,Math.max(b.z,c.z))
+	            if(max <=0)   return f.color.set(new THREE.Color("#087e7e").getHex());
+	            if(max <=1.5) return f.color.set(new THREE.Color("#865800").getHex())
+	            if(max <=3.5)   return f.color.set(new THREE.Color("#4a2400").getHex())
+	            if(max <=5)   return f.color.set(0xcccccc)
+
+	            //otherwise, return white
+	            f.color.set('white')
+	        })
+	        geo.colorsNeedUpdate = true
+	        geo.verticesNeedUpdate = true
+	        //required for flat shading
+	        geo.computeFlatVertexNormals()
+	        const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({
+	            // wireframe:true,
+	            vertexColors: THREE.VertexColors,
+	            //required for flat shading
+	            flatShading:true,
+	        }))
+					mesh.scale.multiplyScalar(50);
+	        mesh.position.y = -50
+	        mesh.position.z = -20
+	        //tilt slightly so we can see it better
+	        mesh.rotation.x = -90*Math.PI/180
+	        return mesh
+	    }
+
+
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+			function animate() {
+				requestAnimationFrame( animate );
+				render();
+			}
+			function render() {
+				if(gem){
+					gem.visible = false;
+					cubeCamera2.position.copy( gem.position );
+					cubeCamera2.update( renderer, scene );
+					gem.visible = true;
+				}
+				if(metal){
+					metal.visible = false;
+					cubeCamera3.position.copy( metal.position );
+					cubeCamera3.update( renderer, scene );
+					metal.visible = true;
+				}
+
+				renderer.render( scene, camera );
+				stats.update();
+			}
+		</script>
+	</body>
+</html>

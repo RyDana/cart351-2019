@@ -1,0 +1,240 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>My first three.js app</title>
+		<style>
+			body { margin: 0;   width: 100%; height: 100%; overflow: hidden;}
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+		<!--<script src="https://threejs.org/build/three.js"></script>-->
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenLite.min.js'></script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/1.18.4/easing/EasePack.min.js'></script>
+		<script type="module">
+			import * as THREE from 'https://unpkg.com/three@0.108.0/build/three.module.js';
+
+			//scene variables
+			let scene,
+				camera,
+				aspectRatio,
+				fieldOfView,
+				nearPlane,
+				farPlane,
+				renderer;
+
+			//objects variables
+			let geometry,
+				material,
+				cube,
+				floor,
+				light,
+				shadowLight;
+
+			let geometryIco,
+				materialIco,
+				icosahedron,
+				verticePositions = [];
+
+
+			let colors = [0x05A8AA, 0xB8D5B8, 0xD7B49E, 0xDC602E, 0xBC412B, 0xF19C79, 0xCBDFBD, 0xF6F4D2, 0xD4E09B, 0xFFA8A9, 0xF786AA, 0xA14A76, 0xBC412B, 0x63A375, 0xD57A66, 0x731A33, 0xCBD2DC, 0xDBD48E, 0x5E5E5E];
+
+			//screen variables
+			let HEIGHT,
+				WIDTH;
+
+			//initialize scene
+			function init(){
+				//init scene
+				scene = new THREE.Scene();
+
+				//init camera (info)
+				HEIGHT = window.innerHeight;
+			  WIDTH = window.innerWidth;
+			  aspectRatio = WIDTH / HEIGHT;
+			  fieldOfView = 60;
+			  nearPlane = 0.1;
+			  farPlane = 1000;
+			  camera = new THREE.PerspectiveCamera(
+			    fieldOfView,
+			    aspectRatio,
+			    nearPlane,
+			    farPlane);
+				//pos camera
+				camera.position.z = 20;
+		  	camera.position.y = 0;
+		  	camera.lookAt(new THREE.Vector3(0,0,0));
+
+				//init renderer
+				renderer = new THREE.WebGLRenderer({alpha: true, antialias: true });
+				renderer.setSize(WIDTH,HEIGHT);
+				renderer.setPixelRatio(window.devicePixelRatio); //optional not recommended
+				renderer.shadowMap.enabled = true; //optional
+				document.body.appendChild( renderer.domElement );
+			}
+
+			function addFloor(){
+				let color = new THREE.Color("#22feb7");
+			  floor = new THREE.Mesh(
+					new THREE.PlaneBufferGeometry(1000,1000),
+					new THREE.MeshStandardMaterial({color: color.getHex()}));
+			  floor.rotation.x = -Math.PI/2;
+			  floor.position.y = -10;
+			  floor.receiveShadow = true;
+			  scene.add(floor);
+			}
+
+			function addIco(){
+				geometryIco = new THREE.IcosahedronGeometry(5);
+				for(let i=0; i<geometryIco.faces.length; i++){
+					let face = geometryIco.faces[i];
+      		face.color.setHex(colors[i]);
+				}
+
+				materialIco = new THREE.MeshLambertMaterial({ vertexColors: THREE.FaceColors });
+
+				icosahedron = new THREE.Mesh(geometryIco, materialIco);
+				scene.add(icosahedron);
+			}
+
+			function getOriginalVerticePositions() {
+			  // go through each vertice geometry and store their position in an array
+			  for (var i = 0, l = geometryIco.vertices.length; i<l; i++) {
+			    verticePositions.push({x: geometryIco.vertices[i].x, y: geometryIco.vertices[i].y});
+			  }
+
+				console.log(verticePositions);
+			}
+
+			function getNewVertices() {
+			  /* this function returns an array of vertice positions which are randomised
+			  from the original vertice position */
+			  let newVertices = [];
+			  for (var i = 0, l = geometryIco.vertices.length; i<l; i++) {
+			    newVertices[i] = {
+			      x: verticePositions[i].x - 1.5 + Math.random()*3,
+			      y: verticePositions[i].y - 1.5 + Math.random()*3
+			    }
+			  }
+			  return newVertices;
+			}
+
+			function tweenIcosahedron() {
+				// create a random rotation aount
+			  let rotation = {x: Math.random()*3, y: Math.random()*3, z: Math.random()*3};
+			  // tween the mesh's rotation property to the new position
+			  TweenLite.to(icosahedron.rotation, 1, {x: rotation.x, y: rotation.y, z: rotation.z,
+			    ease: Back.easeInOut, onComplete: tweenIcosahedron});
+
+			  let newVerticePositions = getNewVertices();
+			  // tween each vertice to their new position
+			  for (var i = 0; i < geometryIco.vertices.length; i++) {
+			    tweenVertice(i, newVerticePositions);
+			  }
+			}
+
+			function tweenVertice(i, newVerticePositions) {
+			  // set the tween
+			  TweenLite.to(geometryIco.vertices[i], 1, {x: newVerticePositions[i].x, y: newVerticePositions[i].y, ease: Back.easeInOut, onComplete: function() {
+			    // start the icosahedron tween again now the animation is complete
+			    if (i === 0) tweenIcosahedron();
+			  }});
+			}
+
+			function addCube(){
+				geometry = new THREE.BoxGeometry( 5, 5, 5 );
+				let color = new THREE.Color("#ffe96b");
+				//solid color
+				//material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+
+				//standard material
+				//material = new THREE.MeshStandardMaterial( { color: 0x00ff00 } );
+
+				//normals
+				//material = new THREE.MeshNormalMaterial();
+
+				//matte material, wireframe optional
+				//material = new THREE.MeshLambertMaterial( { color: color.getHex(), wireframe: true } );
+
+				//shiny material, specular color (shine's color) and shinyness value optional
+				//material = new THREE.MeshPhongMaterial( { color: color.getHex(),
+					//specular: 0x009900, shininess: 20 });
+
+
+				let bumpMap = new THREE.TextureLoader().load('https://s3-us-west-2.amazonaws.com/s.cdpn.io/53148/4268-bump.jpg');
+				let texture = new THREE.TextureLoader().load('https://bbp.style/PUBLIC/BIM-library/jpg/australbricks/Homestead/AB-Bricks-HomesteadRed230x76-110-240-NAT.jpg',
+					function(texture){
+						// this code makes the texture repeat
+					  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+					  texture.repeat.set( 2, 2 );
+					});
+				//only phong materials have bumpmaps
+				material = new THREE.MeshPhongMaterial( {map: texture, bumpMap: bumpMap, shininess: 0} );
+
+				cube = new THREE.Mesh( geometry, material );
+				cube.castShadow = true; //IMPORTANT
+				cube.position.set(-10, 0, 0);
+
+				// update cube vertices
+				for (var i = 0, l = geometry.vertices.length; i<l; i++) {
+				    // we'll move the x & y position of each vertice by a random amount
+				  geometry.vertices[i].x += -1 + Math.random()*2;
+				  geometry.vertices[i].y += -1 + Math.random()*2;
+				}
+
+				scene.add( cube );
+			}
+
+			function addLights(){
+				light = new THREE.PointLight(0xFFFFFF, .4);
+				/* position the light so it shines on the cube (x, y, z) */
+				light.position.set(0, 30, 0);
+				light.castShadow = true;
+
+			  //light = new THREE.HemisphereLight(0xffffff, 0xffffff, .5)
+				scene.add( new THREE.AmbientLight( 0xffffff, 0.6 ) );
+
+			  shadowLight = new THREE.DirectionalLight(0xffffff, .8);
+			  shadowLight.position.set(20, 20, 20);
+			  shadowLight.castShadow = true;
+
+
+			  scene.add(light);
+			  //scene.add(shadowLight);
+
+				//Create a helper for the shadow camera (optional)
+				var helper = new THREE.CameraHelper( light.shadow.camera );
+				scene.add( helper );
+			}
+
+			var animate = function () {
+				requestAnimationFrame( animate );
+
+				cube.rotation.x += 0.01;
+				cube.rotation.y += 0.01;
+
+				renderer.render( scene, camera );
+				geometryIco.verticesNeedUpdate = true; //IMPORTANT
+			};
+
+			init();
+			addFloor();
+			addCube();
+			addIco();
+			getOriginalVerticePositions();
+			tweenIcosahedron();
+			addLights();
+			animate();
+
+			//CODE TO MANAGE WINDOW RECIZING
+			window.addEventListener("resize", resize);
+
+			function resize() {
+			  camera.aspect = window.innerWidth / window.innerHeight;
+			  camera.updateProjectionMatrix();
+			  renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+		</script>
+	</body>
+</html>
