@@ -1,39 +1,56 @@
 <!-- load socket.io into html -->
 <canvas id='ctx' width='500' height='500' style='border:1px solid #000000;'>
 </canvas>
+<!--chatbox-->
+<form id="chat-form">
+    <input id="chat-input" type="text" style="width:500px"></input>
+</form>
 <script src='https://cdn.socket.io/socket.io-1.4.5.js'>
 </script>
 <script>
   //initialise connection socket connection between client & server
   let socket = io();
 
-  //send message titled 'clientMsg' to server
-  socket.emit('clientMsg',{
-    reason:'Hi i am a client'
-  });
-
-  //losten to server message
-  socket.on('serverMsg', function(data){
-    console.log(data.msg);
-  });
-
   //get canvas
   var ctx = document.getElementById('ctx').getContext('2d');
   ctx.font='30px Arial';
 
-  //receive x y parameters from server and display
+  //get chatbox
+  var chatInput = document.getElementById('chat-input');
+  var chatForm = document.getElementById('chat-form');
+
+  //receive player & bullet x y parameters from server and display them
   socket.on('newPosition', function(data){
     ctx.clearRect(0,0,500,500);
-    for(let i=0;i<data.length;i++){
-      ctx.fillText(data[i].number,data[i].x,data[i].y);
+    for(let i=0;i<data.player.length;i++){
+      ctx.fillText(data.player[i].number,data.player[i].x,data.player[i].y);
+    }
+
+    for(var i = 0 ; i < data.bullet.length; i++){
+      ctx.fillRect(data.bullet[i].x-5,data.bullet[i].y-5,10,10);
     }
   });
+
+  //getting eval eval
+  socket.on('evalAnswer',function(data){
+    console.log(data);
+  });
+
+  //chat form handeler
+  chatForm.onsubmit = function(e){
+    e.preventDefault();//prevents page reloading
+
+    //if first caracter is /
+    if(chatInput.value[0] === '/')
+        socket.emit('evalServer',chatInput.value.slice(1));
+
+    chatInput.value = '';
+  }
 
   //controlling the player
   document.onkeydown = function(event){
     if(event.keyCode === 68){   //d
         socket.emit('keyPress',{inputId:'right',state:true});
-        console.log('pressed D');
     }else if(event.keyCode === 83)   //s
         socket.emit('keyPress',{inputId:'down',state:true});
     else if(event.keyCode === 65) //a
