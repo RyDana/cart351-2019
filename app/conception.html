@@ -19,8 +19,6 @@
 		<canvas id="debug-canvas" width="150" height="150"></canvas>
     <script src="https://threejs.org/build/three.js"></script>
 		<script type="text/javascript" src="lib/dat.gui.min.js"></script>
-		<script src='https://vr.josh.earth/webxr-experiments/geometry/node_modules/simplex-noise/simplex-noise.js'></script>
-		<div id="container"></div>
 		<script type="module">
 			//import * as THREE from 'https://unpkg.com/three@0.108.0/build/three.module.js';
 			import Stats from 'https://threejsfundamentals.org/threejs/resources/threejs/r108/examples/jsm/libs/stats.module.js';
@@ -29,7 +27,6 @@
 
 			var container, stats, controls={}, gem, metal;
 			var camera, cubeCamera2,cubeCamera3, reflectionCube, refractionCube, scene, renderer;
-			let simplex = new SimplexNoise(4);
 
 			//GUI
 			controls = { color: "#ff66ee", size: 1, sizeMetal: 1, colorMetal: "#ffffff", reflectivity: 0.7};
@@ -49,22 +46,8 @@
 			function init() {
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
-				//cubemap
-				var path = 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/cube/skyboxsun25deg/';
-				//var path = 'https://raw.githubusercontent.com/timoxley/threejs/master/examples/textures/cube/SwedishRoyalCastle/';
-				var format = '.jpg';
-				var urls = [
-					path + 'px' + format, path + 'nx' + format,
-					path + 'py' + format, path + 'ny' + format,
-					path + 'pz' + format, path + 'nz' + format
-				];
-				reflectionCube = new THREE.CubeTextureLoader().load( urls );
-				reflectionCube.format = THREE.RGBFormat;
-				refractionCube = new THREE.CubeTextureLoader().load( urls );
-				refractionCube.mapping = THREE.CubeRefractionMapping;
-				refractionCube.format = THREE.RGBFormat;
 				scene = new THREE.Scene();
-				scene.background = reflectionCube;
+				scene.background = new THREE.Color( new THREE.Color("#ccfbff").getHex());
         //cameras
         camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 5000);
         camera.position.z = 30;
@@ -93,27 +76,18 @@
 				stats = new Stats();
 				container.appendChild( stats.dom );
 				window.addEventListener( 'resize', onWindowResize, false );
-				//mesh
-				const tex = generateTexture()
-				const mesh = generateMeshFromTexture(tex)
-				scene.add(mesh)
-				//obj = mesh
 			}
 
 			function addObjects(){
-
-				addIco(2);
+				let player = new THREE.Object3D()
+				let rock = addIco(2);
 				gem = addIco(1);
 				metal = addTorus();
-
-				// addIco(2);
-				// if (Math.random() <0.7){
-				// 	 gem = addIco(1);
-				// 	 console.log(gem);
-				// 	if(Math.random() < 0.5){
-				// 		metal = addTorus();
-				// 	}
-				// }
+				player.add(rock);
+				player.add(gem);
+				player.add(metal);
+				scene.add(player);
+				console.log(player);
 				addLights();
 			}
 
@@ -195,7 +169,7 @@
 				  ship.scale.set(controls.size,controls.size,controls.size);
 				});
 
-        scene.add(ship);
+        //scene.add(ship);
 				return ship;
 			}
 
@@ -256,14 +230,14 @@
 						ship.children[i].material = new THREE.MeshLambertMaterial( { color: controls.colorMetal, envMap: cubeCamera3.renderTarget.texture, combine: THREE.MixOperation, reflectivity: controls.reflectivity } );
 					}
 				});
-				scene.add(ship);
+				//scene.add(ship);
 				return ship;
 			}
 
 			function addLights(){
 				//lights
 				var ambient = new THREE.AmbientLight( 0xffffff, .7 );
-				//scene.add( ambient );
+				scene.add( ambient );
 
 				var light = new THREE.PointLight(0xFFFFFF, 1);
 				/* position the light so it shines on the cube (x, y, z) */
