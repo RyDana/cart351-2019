@@ -1,0 +1,31 @@
+<!-- load socket.io into html -->
+<canvas id='ctx' width='500' height='500' style='border:1px solid #000000;'>
+</canvas>
+<script src='https://cdn.socket.io/socket.io-1.4.5.js'>
+</script>
+<script>
+  //initialise connection socket connection between client & server
+  let socket = io();
+
+  //send message titled 'clientMsg' to server
+  socket.emit('clientMsg',{
+    reason:'Hi i am a client'
+  });
+
+  //losten to server message
+  socket.on('serverMsg', function(data){
+    console.log(data.msg);
+  });
+
+  //get canvas
+  var ctx = document.getElementById('ctx').getContext('2d');
+  ctx.font='30px Arial';
+
+  //receive x y parameters from server and display
+  socket.on('newPosition', function(data){
+    ctx.clearRect(0,0,500,500);
+    for(let i=0;i<data.length;i++){
+      ctx.fillText(data[i].number,data[i].x,data[i].y);
+    }
+  });
+</script>
