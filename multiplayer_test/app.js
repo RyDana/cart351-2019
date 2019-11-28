@@ -30,6 +30,10 @@ let Entity = function(){
         self.x += self.spdX;
         self.y += self.spdY;
     }
+    //distance between self and another object (pythagor)
+    self.getDistance = function(pt){
+      return Math.sqrt(Math.pow(self.x-pt.x,2)+Math.pow(self.y-pt.y,2));
+    }
     return self;
 }
 
@@ -42,15 +46,30 @@ let Player = function(id){
   self.pressingLeft = false;
   self.pressingUp = false;
   self.pressingDown = false;
+  self.pressingAttack = false;
+  self.mouseAngle = 0;
   self.maxSpd = 10;
 
-  //rewrite update of player to include updateSpd
+  //rewrite update of player to include updateSpd an shooting
   let super_update = self.update;
   self.update = function(){
       self.updateSpd();
       super_update();
+
+      //shooting
+      if(self.pressingAttack){
+        self.shootBullet(self.mouseAngle);
+      }
   }
 
+  //spawn bullet
+  self.shootBullet = function(angle){
+    let b = Bullet(self.id, angle);
+    b.x = self.x;
+    b.y = self.y;
+  }
+
+  //update speed, uses entity parameters
   self.updateSpd = function(){
       if(self.pressingRight)
           self.spdX = self.maxSpd;
@@ -76,6 +95,8 @@ Player.list = {}; //no longer a global variable
 
 Player.onConnect = function(socket){
     let player = Player(socket.id);
+
+    //sets event listener into object
     socket.on('keyPress',function(data){
         if(data.inputId === 'left')
             player.pressingLeft = data.state;
@@ -83,8 +104,12 @@ Player.onConnect = function(socket){
             player.pressingRight = data.state;
         else if(data.inputId === 'up')
             player.pressingUp = data.state;
-        else if(data.inputId === 'down')
+        else if(data.inputId === 'down'){
             player.pressingDown = data.state;
+        } else if(data.inputId === 'attack'){
+          player.pressingAttack = data.state;
+        }  else if(data.inputId === 'mouseAngle')
+            player.mouseAngle = data.state;
     });
 }
 
@@ -92,7 +117,7 @@ Player.onDisconnect = function(socket){
     delete Player.list[socket.id];
 }
 
-Player.update = function(){
+Player.sendPack = function(){
     var pack = [];
     for(var i in Player.list){
         var player = Player.list[i];
@@ -109,12 +134,12 @@ Player.update = function(){
 //////END OF PLAYER CLASS////////
 
 /////BULLET CLASS////////////
-var Bullet = function(angle){
+var Bullet = function(parent, angle){
     var self = Entity();
     self.id = Math.random();
     self.spdX = Math.cos(angle/180*Math.PI) * 10;
     self.spdY = Math.sin(angle/180*Math.PI) * 10;
-
+    self.parent = parent;
     self.timer = 0;
     self.toRemove = false;
 
@@ -124,6 +149,14 @@ var Bullet = function(angle){
         if(self.timer++ > 100)
             self.toRemove = true;
         super_update();
+
+        //mark as to remove when touches another player
+        for(var i in Player.list){
+          var p = Player.list[i];
+          if(self.getDistance(p) < 32 && self.parent !== p.id){
+            self.toRemove = true;
+          }
+        }
     }
 
     //add to list
@@ -133,30 +166,36 @@ var Bullet = function(angle){
 
 Bullet.list = {};
 
-Bullet.update = function(){
-    if(Math.random() < 0.1){
-        Bullet(Math.random()*360);
-    }
+Bullet.sendPack = function(){
+    //make bullets appear randomly
+    // if(Math.random() < 0.1){
+    //     Bullet(Math.random()*360);
+    // }
 
     var pack = [];
     for(var i in Bullet.list){
         var bullet = Bullet.list[i];
         bullet.update();
-        pack.push({
-            x:bullet.x,
-            y:bullet.y,
-        });
+        if(bullet.toRemove){
+          delete Bullet.list[i];
+        } else {
+          pack.push({
+              x:bullet.x,
+              y:bullet.y,
+          });
+        }
     }
     return pack;
 }
 ///////END OF BULLET CLASS//////
 
-//////SOCKET MANIPULATION///////
+
 //for eval() debugging
 var DEBUG = true;
 //create an array of sockets (clients) & players
 let SOCKET_LIST = {};
 
+//////SOCKET MANIPULATION///////
 //load socket.io into the server
 let io = require('socket.io')(serv,{});
 
@@ -169,8 +208,8 @@ io.sockets.on('connection', function(socket){
   //put socket into socket array
   SOCKET_LIST[socket.id]=socket;
 
-  //handle player connection & give keypress listener
   Player.onConnect(socket);
+
 
   //listen when socket disconnects
   socket.on('disconnect', function(){
@@ -193,8 +232,8 @@ io.sockets.on('connection', function(socket){
 //update and send parameters of all connected sockets to client (loop)
 setInterval(function(){
   let pack = {
-    player:Player.update(),
-    bullet:Bullet.update()
+    player:Player.sendPack(),
+    bullet:Bullet.sendPack()
   }
 
   //send the pack to client THROUGH THE SOCKET
