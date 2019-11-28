@@ -195,6 +195,34 @@ var DEBUG = true;
 //create an array of sockets (clients) & players
 let SOCKET_LIST = {};
 
+//array of users (example)
+var USERS = {
+    //username:password
+    "bob":"asd",
+    "bob2":"bob",
+    "bob3":"ttt",
+}
+
+//functions for login/signup
+//uses a callback function that takes in a T/F result
+//timeout simulates database delay
+var isValidPassword = function(data,cb){
+    setTimeout(function(){
+        cb(USERS[data.username] === data.password);
+    },10);
+}
+var isUsernameTaken = function(data,cb){
+    setTimeout(function(){
+        cb(USERS[data.username]);//returns true if exists
+    },10);
+}
+var addUser = function(data,cb){
+    setTimeout(function(){
+        USERS[data.username] = data.password;
+        cb();//callback is empty if nothing to compare
+    },10);
+}
+
 //////SOCKET MANIPULATION///////
 //load socket.io into the server
 let io = require('socket.io')(serv,{});
@@ -208,7 +236,33 @@ io.sockets.on('connection', function(socket){
   //put socket into socket array
   SOCKET_LIST[socket.id]=socket;
 
-  Player.onConnect(socket);
+  //sign in listener
+  socket.on('signIn',function(data){
+      //if password is valid, create player and notify client
+       isValidPassword(data,function(res){
+           if(res){
+               Player.onConnect(socket);
+               socket.emit('signInResponse',{success:true});
+           } else {
+               socket.emit('signInResponse',{success:false});
+           }
+       });
+   });
+
+   //sign up listener
+   socket.on('signUp',function(data){
+     //if username is taken, notify client
+       isUsernameTaken(data,function(res){
+           if(res){
+               socket.emit('signUpResponse',{success:false});
+           } else {
+             //if not, add user to array and notify client
+               addUser(data,function(){
+                   socket.emit('signUpResponse',{success:true});
+               });
+           }
+       });
+   });
 
 
   //listen when socket disconnects
