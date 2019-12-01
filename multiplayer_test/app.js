@@ -11,6 +11,11 @@ app.use('/client', express.static(__dirname+'/client'));//else extract file
 serv.listen(2000);//using port 2000
 console.log('server started');
 //************************************************************//
+//whenever a new player is created, put em here
+let initPack = {player:[],bullet:[]};
+
+//whenever a player is to be removed, put em here
+let removePack = {player:[],bullet:[]};
 
 ////////////ENTITY CLASS////////////
 let Entity = function(){
@@ -85,14 +90,35 @@ let Player = function(id){
       else
           self.spdY = 0;
   }
+
+  //create package to be sent for player init
+  self.getInitPack = function(){
+    return {
+      id: self.id,
+      x: self.x,
+      y: self.y,
+      number: self.number
+    }
+  }
+  //create package to be sent for player update
+  self.getUpdatePack = function(){
+    return {
+      id: self.id,
+      x: self.x,
+      y: self.y
+    }
+  }
   //add the player to a list of players
   Player.list[id] = self;
+  //add it to the list of NEW players
+  initPack.player.push(self.getInitPack());
   return self;
 }
 
-////player functions////
-Player.list = {}; //no longer a global variable
+///list of players///
+Player.list = {};
 
+////player functions////
 Player.onConnect = function(socket){
     let player = Player(socket.id);
 
@@ -111,10 +137,31 @@ Player.onConnect = function(socket){
         }  else if(data.inputId === 'mouseAngle')
             player.mouseAngle = data.state;
     });
+
+    ///send to player the state of the game///
+
+    //get init pack of every player (contains position/id/number)
+    let playersState = [];
+    for(let i in Player.list){
+      playersState.push(Player.list[i].getInitPack());
+    }
+    //and of every bullet
+    let bulletsState = [];
+    for(let i in Bullet.list){
+      bulletsState.push(Bullet.list[i].getInitPack());
+    }
+
+    socket.emit('init',{
+      player:playersState,
+      bullet:bulletsState
+    });
 }
 
+//remove player from list and add to removepack
 Player.onDisconnect = function(socket){
     delete Player.list[socket.id];
+    //send to remove pack
+    removePack.player.push(socket.id);
 }
 
 Player.sendPack = function(){
@@ -122,11 +169,7 @@ Player.sendPack = function(){
     for(var i in Player.list){
         var player = Player.list[i];
         player.update();
-        pack.push({
-            x:player.x,
-            y:player.y,
-            number:player.number
-        });
+        pack.push(player.getUpdatePack());
     }
     return pack;
 }
@@ -159,13 +202,34 @@ var Bullet = function(parent, angle){
         }
     }
 
-    //add to list
+    //create package to be sent for player init
+    self.getInitPack = function(){
+      return {
+        id: self.id,
+        x: self.x,
+        y: self.y
+      }
+    }
+    //create package to be sent for player update
+    self.getUpdatePack = function(){
+      return {
+        id: self.id,
+        x: self.x,
+        y: self.y
+      }
+    }
+
+    //add to list of bullets
     Bullet.list[self.id] = self;
+    //add to list of NEW bullets
+    initPack.bullet.push(self.getInitPack());
     return self;
 }
 
 Bullet.list = {};
 
+//cleates a pack to emit to client
+//handles bullet removal too
 Bullet.sendPack = function(){
     //make bullets appear randomly
     // if(Math.random() < 0.1){
@@ -175,14 +239,13 @@ Bullet.sendPack = function(){
     var pack = [];
     for(var i in Bullet.list){
         var bullet = Bullet.list[i];
-        bullet.update();
-        if(bullet.toRemove){
-          delete Bullet.list[i];
+        bullet.update();// update position
+        if(bullet.toRemove){ //if marked to remove
+          delete Bullet.list[i]; //delete from list
+          //send to remove pack
+          removePack.bullet.push(bullet.id);
         } else {
-          pack.push({
-              x:bullet.x,
-              y:bullet.y,
-          });
+          pack.push(bullet.getUpdatePack());
         }
     }
     return pack;
@@ -285,6 +348,7 @@ io.sockets.on('connection', function(socket){
 
 //update and send parameters of all connected sockets to client (loop)
 setInterval(function(){
+  //package with positions/ids of players/bullets
   let pack = {
     player:Player.sendPack(),
     bullet:Bullet.sendPack()
@@ -293,6 +357,15 @@ setInterval(function(){
   //send the pack to client THROUGH THE SOCKET
   for(let i in SOCKET_LIST){
     let socket = SOCKET_LIST[i];
-    socket.emit('newPosition',pack);
+    socket.emit('init',initPack);
+    socket.emit('update',pack);
+    socket.emit('remove',removePack);
   }
+
+  //reset the packages to empty
+  initPack.player = [];
+  initPack.bullet = [];
+  removePack.player = [];
+  removePack.bullet = [];
+
 }, 1000/25);//25fps
