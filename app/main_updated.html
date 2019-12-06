@@ -10,10 +10,17 @@
         height: 100%;
         overflow: hidden;
       }
+			#start-game{
+				position: fixed;
+				bottom: 30px;
+				right: 30px;
+			}
     </style>
 	</head>
 	<body>
     <script src="https://threejs.org/build/three.js"></script>
+		<script type="text/javascript" src="lib/dat.gui.min.js"></script>
+		<script type="text/javascript" src="lib/LegacyJSONLoader.js"></script>
 		<script type="x-shader/x-vertex" id="vertexShader">
 		  // Classic Perlin noise, periodic variant
 			vec3 mod289(vec3 x)			{
@@ -165,8 +172,9 @@
 				#endif
 			}
 	  </script>
+		<button id="start-game">Start Game</button>
 		<div id="container"></div>
-		<script type="module" src = 'js/main.js'></script>
+		<script type="module" src = 'js/main_updated.js'></script>
 
 	</body>
 </html>

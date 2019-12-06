@@ -165,9 +165,9 @@ Player.onDisconnect = function(socket){
 }
 
 Player.sendPack = function(){
-    var pack = [];
-    for(var i in Player.list){
-        var player = Player.list[i];
+    let pack = [];
+    for(let i in Player.list){
+        let player = Player.list[i];
         player.update();
         pack.push(player.getUpdatePack());
     }
@@ -177,8 +177,8 @@ Player.sendPack = function(){
 //////END OF PLAYER CLASS////////
 
 /////BULLET CLASS////////////
-var Bullet = function(parent, angle){
-    var self = Entity();
+let Bullet = function(parent, angle){
+    let self = Entity();
     self.id = Math.random();
     self.spdX = Math.cos(angle/180*Math.PI) * 10;
     self.spdY = Math.sin(angle/180*Math.PI) * 10;
@@ -187,15 +187,15 @@ var Bullet = function(parent, angle){
     self.toRemove = false;
 
     //rewrite update
-    var super_update = self.update;
+    let super_update = self.update;
     self.update = function(){
         if(self.timer++ > 100)
             self.toRemove = true;
         super_update();
 
         //mark as to remove when touches another player
-        for(var i in Player.list){
-          var p = Player.list[i];
+        for(let i in Player.list){
+          let p = Player.list[i];
           if(self.getDistance(p) < 32 && self.parent !== p.id){
             self.toRemove = true;
           }
@@ -236,9 +236,9 @@ Bullet.sendPack = function(){
     //     Bullet(Math.random()*360);
     // }
 
-    var pack = [];
-    for(var i in Bullet.list){
-        var bullet = Bullet.list[i];
+    let pack = [];
+    for(let i in Bullet.list){
+        let bullet = Bullet.list[i];
         bullet.update();// update position
         if(bullet.toRemove){ //if marked to remove
           delete Bullet.list[i]; //delete from list
@@ -254,12 +254,12 @@ Bullet.sendPack = function(){
 
 
 //for eval() debugging
-var DEBUG = true;
+let DEBUG = true;
 //create an array of sockets (clients) & players
 let SOCKET_LIST = {};
 
 //array of users (example)
-var USERS = {
+let USERS = {
     //username:password
     "bob":"asd",
     "bob2":"bob",
@@ -269,17 +269,17 @@ var USERS = {
 //functions for login/signup
 //uses a callback function that takes in a T/F result
 //timeout simulates database delay
-var isValidPassword = function(data,cb){
+let isValidPassword = function(data,cb){
     setTimeout(function(){
         cb(USERS[data.username] === data.password);
     },10);
 }
-var isUsernameTaken = function(data,cb){
+let isUsernameTaken = function(data,cb){
     setTimeout(function(){
         cb(USERS[data.username]);//returns true if exists
     },10);
 }
-var addUser = function(data,cb){
+let addUser = function(data,cb){
     setTimeout(function(){
         USERS[data.username] = data.password;
         cb();//callback is empty if nothing to compare
@@ -340,7 +340,7 @@ io.sockets.on('connection', function(socket){
   socket.on('evalServer',function(data){
     if(!DEBUG) //if debugging is not allowed
         return;
-    var res = eval(data);
+    let res = eval(data);
     socket.emit('evalAnswer',res);
   });
 
