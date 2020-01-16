@@ -1,99 +1,3 @@
-
-
-
-///////GAME LOGIC////////
-//player class
-let Player = function(initPack){
-  let self = {};
-  self.id = initPack.id;
-  self.object = initPack.object;
-  self.x = initPack.x;
-  self.y = initPack.y;
-  self.z = initPack.z;
-
-  Player.list[self.id]=self;
-  return self;
-}
-
-Player.list = {};
-
-// //bullet class
-// let Bullet = function(initPack){
-//   let self = {};
-//   self.id = initPack.id;
-//   self.x = initPack.x;
-//   self.y = initPack.y;
-//   self.draw = function(){
-//     ctx.fillRect(self.x-5,self.y-5,10,10);
-//   }
-//   Bullet.list[self.id]=self;
-//   return self;
-// }
-//
-// Bullet.list = {};
-
-
-
-//initialise player or bullet from server
-socket.on('init', function(data){
-  for(let i=0;i<data.player.length;i++){
-    new Player(data.player[i]);
-    gameScene.add(data.player[i].object);
-    data.player[i].object.position.set(data.player[i].x)
-  }
-
-  // for(let i = 0 ; i < data.bullet.length; i++){
-  //   new Bullet(data.bullet[i]);
-  // }
-});
-
-//update positions of player or bullet from server
-socket.on('update',function(data){
-    //{ player : [{id:123,x:0,y:0},{id:1,x:0,y:0}], bullet: []}
-    for(let i = 0 ; i < data.player.length; i++){
-        let pack = data.player[i];
-        let p = Player.list[pack.id];
-        if(p){
-            if(pack.x !== undefined)
-                p.x = pack.x;
-            if(pack.y !== undefined)
-                p.y = pack.y;
-            if(pack.z !== undefined)
-                p.z = pack.z;
-        }
-    }
-    // for(let i = 0 ; i < data.bullet.length; i++){
-    //     let pack = data.bullet[i];
-    //     let b = Bullet.list[data.bullet[i].id];
-    //     if(b){
-    //         if(pack.x !== undefined)
-    //             b.x = pack.x;
-    //         if(pack.y !== undefined)
-    //             b.y = pack.y;
-    //     }
-    // }
-});
-
-//remove player or bullet
-socket.on('remove',function(data){
-    //{player:[12323],bullet:[12323,123123]}
-    for(let i = 0 ; i < data.player.length; i++){
-        delete Player.list[data.player[i]];
-    }
-    // for(let i = 0 ; i < data.bullet.length; i++){
-    //     delete Bullet.list[data.bullet[i]];
-    // }
-});
-
-//diplay each bullet and player from their respective lists
-setInterval(function(){
-    ctx.clearRect(0,0,500,500);
-    for(let i in Player.list)
-        Player.list[i].draw();
-    for(let i in Bullet.list)
-        Bullet.list[i].draw();
-},1000/25);
-
 import Stats from 'https://threejsfundamentals.org/threejs/resources/threejs/r108/examples/jsm/libs/stats.module.js';
 import { OrbitControls } from 'https://threejsfundamentals.org/threejs/resources/threejs/r108/examples/jsm/controls/OrbitControls.js';
 import { FlyControls } from 'https://threejsfundamentals.org/threejs/resources/threejs/r108/examples/jsm/controls/FlyControls.js';
@@ -112,6 +16,7 @@ let onGame = false;
 
 //GUI
 guiControls = { color: "#ff66ee", size: 1, sizeMetal: 1, colorMetal: "#ffffff", reflectivity: 0.7};
+console.log(guiControls);
 var gui = new dat.GUI();
 var c_mesh_size = gui.add(guiControls, 'size', 0,2);
 var c_mesh_color = gui.addColor(guiControls, 'color', 0,100);
@@ -119,29 +24,17 @@ var c_mesh_metal_size = gui.add(guiControls, 'sizeMetal', 0,2);
 var c_mesh_metal_color = gui.addColor(guiControls, 'colorMetal', 0,100);
 var c_mesh_metal_refl = gui.add(guiControls, 'reflectivity', 0,1);
 
-//initialise connection socket connection between client & server
-let socket = io();
-
 init();
 addObjects();
 animate();
 
 //start game
-let button = document.getElementById('start-game')
-button.onclick = function(){
-  socket.emit('signIn',{/*OBJECT*/});
+document.getElementById('start-game').onclick = function(){
+  initGame();
+  addObjectsGame();
+  onGame = true;
+  this.display = 'none';
 }
-
-//server response for sign in
-socket.on('signInResponse',function(data){
-    if(data.success){
-      initGame();
-      addObjectsGame();
-      onGame = true;
-      button.display = 'none';
-    } else
-        alert("Sign in unsuccessul.");
-});
 
 ////CONEPTION SCREEN/////
 function init() {
@@ -263,6 +156,7 @@ function addIco(choice){
   ship.frustumCulled = false;
   ship.castShadow = true;
   ship.receiveShadow = true;
+  ship.name = 'ship';
   ship.scale.set(guiControls.size,guiControls.size,guiControls.size);
   c_mesh_size.onChange(function(){
     ship.scale.set(guiControls.size,guiControls.size,guiControls.size);
@@ -326,6 +220,7 @@ function addTorus(){
   ship.frustumCulled = false;
   ship.castShadow = true;
   ship.receiveShadow = true;
+  ship.name = 'ship';
   ship.scale.set(guiControls.sizeMetal,guiControls.sizeMetal,guiControls.sizeMetal);
   c_mesh_metal_size.onChange(function(){
     ship.scale.set(guiControls.sizeMetal,guiControls.sizeMetal,guiControls.sizeMetal);
@@ -382,18 +277,57 @@ function initGame() {
   player.add(playerShape);
   sceneGame.add(player);
 
-
+  //JSON player
   let playerJson = playerShape.clone();
-  console.log(playerJson);
+  //console.log(playerJson);
   let playerJSON = playerJson.toJSON();
-  console.log(playerJSON);
+  //console.log(playerJSON);
   var loader = new THREE.ObjectLoader();
   var object = loader.parse(playerJSON);
-  console.log(object);
+  //console.log(object);
+  object.children[1].material.envMap = cubeCamera.renderTarget.texture;
+  object.children[2].material.envMap = cubeCamera.renderTarget.texture;
+  object.position.set(0,0,-100);
   sceneGame.add( object );
 
   playerShape.children[1].material.envMap = cubeCamera.renderTarget.texture;
   playerShape.children[2].material.envMap = cubeCamera.renderTarget.texture;
+
+  //Other player
+  for(let i=0; i<10; i++){
+    let randomPlayer = new THREE.Object3D()
+    randomPlayer.add(addIco(2));
+    randomPlayer.add(addIco(1));
+    randomPlayer.add(addTorus());
+    randomPlayer.children[1].material.color.r = Math.random();
+    randomPlayer.children[1].material.color.g = Math.random();
+    randomPlayer.children[1].material.color.b = Math.random();
+    randomPlayer.children[2].material.color.r = Math.random();
+    randomPlayer.children[2].material.color.g = Math.random();
+    randomPlayer.children[2].material.color.b = Math.random();
+    randomPlayer.position.set(-2000+(Math.random()*4000), -2000+(Math.random()*4000), -2000+(Math.random()*4000));
+    console.log(randomPlayer);
+    sceneGame.add(randomPlayer)
+  }
+
+
+  // var exporter = new GLTFExporter();
+  // var exportedObject;
+  // // Parse the input and generate the glTF output
+  // exporter.parse( playerJson, function ( gltf ) {
+  // 	console.log( gltf );
+  //   exportedObject = JSON.stringify(gltf);
+  //   //console.log(exportedObject);
+  //
+  //   //Instantiate a loader
+  //   var loader = new GLTFLoader();
+  //   loader.parse(exportedObject,"", function(object){
+  //     //console.log(object);
+  //     console.log(object.scene.children[0]);
+  //     //sceneGame.add(object.scene.children[0]);
+  //   })
+  //
+  // });
 
   //controls
   controls = new FlyControls( player, renderer.domElement );
@@ -405,6 +339,8 @@ function initGame() {
   sceneGame.add(controls.object);
 
   raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 30);
+  raycaster.camera= cameraGame;
+  console.log(raycaster);
   //stats
   stats = new Stats();
   container.appendChild( stats.dom );
@@ -510,6 +446,16 @@ function onWindowResize() {
 }
 function animate() {
   requestAnimationFrame( animate );
+  if(onGame){
+    raycaster.ray.origin.copy( player.position );
+    var intersections = raycaster.intersectObjects( sceneGame.children, true );
+    if(intersections.length > 0
+      && intersections[0].distance < 30
+      && intersections[0].object.name === 'ship'){
+      intersections[0].object.name = 'touched';
+      addStar(player.position);
+    }
+  }
   render();
 }
 function render() {
