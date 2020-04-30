@@ -4,6 +4,7 @@
 		<title>HERE</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link href="https://fonts.googleapis.com/css2?family=Signika:wght@600&display=swap" rel="stylesheet">
     <style>
       html, body {
         margin: 0;
@@ -26,16 +27,27 @@
 			button {
 				width: 300px;
 				font-size: 28px;
+				font-family: 'Signika', sans-serif;
 			  background-color: rgba(255, 255, 255, 0);
-			  color: rgba(255, 255, 255, 0.7);
-			  border: 2px solid rgba(255, 255, 255, 0.7);
+			  color: white;
+			  border: 8px solid white;
 				padding: 32px 40px;
 				text-align: center;
 				text-decoration: none;
+				display: none;
 			}
 			button:hover {
 				background-color: rgba(255, 255, 255, 1);
 				color: black;
+			}
+			img {
+				margin: 0;
+			  position: absolute;
+			  top: 50%;
+			  left: 50%;
+			  -ms-transform: translate(-50%, -50%);
+			  transform: translate(-50%, -50%);
+			  width: 80%;
 			}
     </style>
 	</head>
@@ -195,7 +207,8 @@
 			}
 	  </script>
 		<button id="start-game">Start Game</button>
-		<button id="reload-shape">Reload Gems</button>
+		<button id="reload-shape">Reshape Gemstone</button>
+		<img id='imageDir' src='img/1x/intro.png' alt='introImg'/>
 		<div id="container"></div>
 		<script type="module" src = 'js/main_updated.js'></script>
 

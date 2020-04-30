@@ -24,12 +24,32 @@ var c_mesh_metal_size = gui.add(guiControls, 'sizeMetal', 0,2);
 var c_mesh_metal_color = gui.addColor(guiControls, 'colorMetal', 0,100);
 var c_mesh_metal_refl = gui.add(guiControls, 'reflectivity', 0,1);
 
-init();
-addObjects();
-animate();
+document.addEventListener('DOMContentLoaded', function(event) {
+  dat.GUI.toggleHide();
+  init();
+  addObjects();
+  animate();
+
+  setTimeout(function(){
+    document.getElementById('imageDir').src='img/1x/conceptDir.png';
+    setTimeout(function(){
+      let img = document.getElementById('imageDir');
+      img.style.display='none';
+      img.src ='img/1x/gameDir.png';
+      document.getElementById('reload-shape').style.display='block';
+      document.getElementById('start-game').style.display='block';
+      dat.GUI.toggleHide();
+    },4000)
+  }, 3000)
+})
+
 
 //start game
 document.getElementById('start-game').onclick = function(){
+  document.getElementById('imageDir').style.display='block';
+  setTimeout(function(){
+    document.getElementById('imageDir').style.display='none';
+  },6000);
   initGame();
   addObjectsGame();
   onGame = true;
@@ -281,6 +301,7 @@ function initGame() {
   //cameras
   cameraGame = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 5000);
 
+
   cubeCamera = new THREE.CubeCamera( 1, 5000, 256 );
   cubeCamera.renderTarget.texture.generateMipmaps = true;
   cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipmapLinearFilter;
@@ -298,6 +319,9 @@ function initGame() {
   player.add(cameraGame);
   player.add(playerShape);
   sceneGame.add(player);
+  player.position.y = -3000;
+  player.rotation.x = 0.52;
+
 
   // //JSON player (deprecated)
   // let playerJson = playerShape.clone();
