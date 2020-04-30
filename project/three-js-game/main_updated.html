@@ -9,11 +9,33 @@
         margin: 0;
         height: 100%;
         overflow: hidden;
+	  		margin: 0;
+				background: rgb(100,104,112);
+				background: radial-gradient(circle, rgba(100,104,112,1) 0%, rgba(25,27,33,1) 100%);
       }
 			#start-game{
 				position: fixed;
 				bottom: 30px;
 				right: 30px;
+			}
+			#reload-shape{
+				position: fixed;
+				bottom: 150px;
+				right: 30px;
+			}
+			button {
+				width: 300px;
+				font-size: 28px;
+			  background-color: rgba(255, 255, 255, 0);
+			  color: rgba(255, 255, 255, 0.7);
+			  border: 2px solid rgba(255, 255, 255, 0.7);
+				padding: 32px 40px;
+				text-align: center;
+				text-decoration: none;
+			}
+			button:hover {
+				background-color: rgba(255, 255, 255, 1);
+				color: black;
 			}
     </style>
 	</head>
@@ -173,6 +195,7 @@
 			}
 	  </script>
 		<button id="start-game">Start Game</button>
+		<button id="reload-shape">Reload Gems</button>
 		<div id="container"></div>
 		<script type="module" src = 'js/main_updated.js'></script>
 

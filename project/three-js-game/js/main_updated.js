@@ -33,29 +33,48 @@ document.getElementById('start-game').onclick = function(){
   initGame();
   addObjectsGame();
   onGame = true;
-  this.display = 'none';
+  this.style.display = 'none';
+  document.getElementById('reload-shape').style.display = 'none';
+  dat.GUI.toggleHide();
+}
+
+//start game
+document.getElementById('reload-shape').onclick = function(){
+  addObjects();
 }
 
 ////CONEPTION SCREEN/////
 function init() {
   container = document.getElementById('container');
   scene = new THREE.Scene();
-  scene.background = new THREE.Color( new THREE.Color("#ccfbff").getHex());
+  //scene.background = new THREE.Color( new THREE.Color("#313131").getHex());
   //cameras
   camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 5000);
   camera.position.z = 30;
 
-  cubeCamera = new THREE.CubeCamera( 1, 1000, 256 );
-  cubeCamera.renderTarget.texture.generateMipmaps = true;
-  cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipmapLinearFilter;
-  scene.add( cubeCamera );
+  //cubemap
+  var path = 'https://raw.githubusercontent.com/timoxley/threejs/master/examples/textures/cube/pisa/';
+  //var path = 'https://raw.githubusercontent.com/timoxley/threejs/master/examples/textures/cube/SwedishRoyalCastle/';
+  var format = '.png';
+  var urls = [
+    path + 'px' + format, path + 'nx' + format,
+    path + 'py' + format, path + 'ny' + format,
+    path + 'pz' + format, path + 'nz' + format
+  ];
+  cubeCamera = new THREE.CubeTextureLoader().load( urls );
+  cubeCamera.format = THREE.RGBFormat;
+
+  //cubeCamera = new THREE.CubeCamera( 1, 1000, 256 );
+  //cubeCamera.renderTarget.texture.generateMipmaps = true;
+  //cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipmapLinearFilter;
+  //scene.add( cubeCamera );
 
   //light
   ambLight = new THREE.AmbientLight( 0xffffff, .7 );
   scene.add(ambLight);
 
   //renderer
-  renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer({ alpha: true });
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
   container.appendChild( renderer.domElement );
@@ -72,6 +91,9 @@ function init() {
 }
 
 function addObjects(){
+  if(playerShape){
+    scene.remove(playerShape);
+  }
   playerShape = new THREE.Object3D()
   rock = addIco(2);
   gem = addIco(1);
@@ -86,10 +108,10 @@ function addObjects(){
 function addIco(choice){
   var ship = new THREE.Object3D();
   if (choice === 1){
-    var mat = new THREE.MeshBasicMaterial( { color: guiControls.color, side: THREE.DoubleSide, envMap: cubeCamera.renderTarget.texture,refractionRatio: 0.55 } );
+    var mat = new THREE.MeshBasicMaterial( { color: guiControls.color, side: THREE.DoubleSide, envMap: cubeCamera,refractionRatio: 0.55 } );
 
     c_mesh_color.onChange(function(){
-      ship.material = new THREE.MeshBasicMaterial( { color: guiControls.color, side: THREE.DoubleSide,  envMap: cubeCamera.renderTarget.texture, refractionRatio: 0.55 } );
+      ship.material = new THREE.MeshBasicMaterial( { color: guiControls.color, side: THREE.DoubleSide,  envMap: cubeCamera, refractionRatio: 0.55 } );
     });
   } else{
     let bumpMap = new THREE.TextureLoader().load('img/rock-texture.jpg',
@@ -168,7 +190,7 @@ function addIco(choice){
 
 function addTorus(){
   var ship = new THREE.Object3D();
-  var mat = new THREE.MeshBasicMaterial( { color: guiControls.colorMetal,  envMap: cubeCamera.renderTarget.texture, combine: THREE.MixOperation, reflectivity: guiControls.reflectivity} );
+  var mat = new THREE.MeshBasicMaterial( { color: guiControls.colorMetal,  envMap: cubeCamera, combine: THREE.MixOperation, reflectivity: guiControls.reflectivity} );
 
   //var mat = new THREE.MeshLambertMaterial( { color: 0xffffff, side: THREE.DoubleSide, envMap: refractionCube, refractionRatio: 0.55 } );
   //var mat = new THREE.MeshLambertMaterial( { color: 0xffffff, envMap: reflectionCube } );
@@ -277,40 +299,24 @@ function initGame() {
   player.add(playerShape);
   sceneGame.add(player);
 
-  //JSON player
-  let playerJson = playerShape.clone();
-  //console.log(playerJson);
-  let playerJSON = playerJson.toJSON();
-  //console.log(playerJSON);
-  var loader = new THREE.ObjectLoader();
-  var object = loader.parse(playerJSON);
-  //console.log(object);
-  object.children[1].material.envMap = cubeCamera.renderTarget.texture;
-  object.children[2].material.envMap = cubeCamera.renderTarget.texture;
-  object.position.set(0,0,-100);
-  sceneGame.add( object );
+  // //JSON player (deprecated)
+  // let playerJson = playerShape.clone();
+  // //console.log(playerJson);
+  // let playerJSON = playerJson.toJSON();
+  // //console.log(playerJSON);
+  // var loader = new THREE.ObjectLoader();
+  // var object = loader.parse(playerJSON);
+  // //console.log(object);
+  // object.children[1].material.envMap = cubeCamera.renderTarget.texture;
+  // object.children[2].material.envMap = cubeCamera.renderTarget.texture;
+  // object.position.set(0,0,-100);
+  // sceneGame.add( object );
 
   playerShape.children[1].material.envMap = cubeCamera.renderTarget.texture;
   playerShape.children[2].material.envMap = cubeCamera.renderTarget.texture;
 
-  //Other player
-  for(let i=0; i<10; i++){
-    let randomPlayer = new THREE.Object3D()
-    randomPlayer.add(addIco(2));
-    randomPlayer.add(addIco(1));
-    randomPlayer.add(addTorus());
-    randomPlayer.children[1].material.color.r = Math.random();
-    randomPlayer.children[1].material.color.g = Math.random();
-    randomPlayer.children[1].material.color.b = Math.random();
-    randomPlayer.children[2].material.color.r = Math.random();
-    randomPlayer.children[2].material.color.g = Math.random();
-    randomPlayer.children[2].material.color.b = Math.random();
-    randomPlayer.position.set(-2000+(Math.random()*4000), -2000+(Math.random()*4000), -2000+(Math.random()*4000));
-    console.log(randomPlayer);
-    sceneGame.add(randomPlayer)
-  }
 
-
+  //export player as a GLTF (deprecated)
   // var exporter = new GLTFExporter();
   // var exportedObject;
   // // Parse the input and generate the glTF output
@@ -328,6 +334,25 @@ function initGame() {
   //   })
   //
   // });
+
+  //Other player
+  for(let i=0; i<10; i++){
+    let randomPlayer = new THREE.Object3D()
+    randomPlayer.add(addIco(2));
+    randomPlayer.add(addIco(1));
+    randomPlayer.add(addTorus());
+    randomPlayer.children[1].material.color.r = Math.random();
+    randomPlayer.children[1].material.color.g = Math.random();
+    randomPlayer.children[1].material.color.b = Math.random();
+    randomPlayer.children[2].material.color.r = Math.random();
+    randomPlayer.children[2].material.color.g = Math.random();
+    randomPlayer.children[2].material.color.b = Math.random();
+    randomPlayer.children[1].material.envMap = cubeCamera.renderTarget.texture;
+    randomPlayer.children[2].material.envMap = cubeCamera.renderTarget.texture;
+    randomPlayer.position.set(-2000+(Math.random()*4000), -2000+(Math.random()*4000), -2000+(Math.random()*4000));
+    console.log(randomPlayer);
+    sceneGame.add(randomPlayer)
+  }
 
   //controls
   controls = new FlyControls( player, renderer.domElement );
@@ -472,12 +497,12 @@ function render() {
     stats.update();
 
   }else {
-    gem.visible = false;
-    metal.visible = false;
-    cubeCamera.position.copy( gem.position );
-    cubeCamera.update( renderer, scene );
-    gem.visible = true;
-    metal.visible = true;
+    // gem.visible = false;
+    // metal.visible = false;
+    // cubeCamera.position.copy( gem.position );
+    // cubeCamera.update( renderer, scene );
+    // gem.visible = true;
+    // metal.visible = true;
 
 
     renderer.render( scene, camera );
