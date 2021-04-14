@@ -268,10 +268,10 @@ function addTorus(){
     ship.scale.set(guiControls.sizeMetal,guiControls.sizeMetal,guiControls.sizeMetal);
   });
   c_mesh_metal_color.onChange(function(){
-      ship.material = new THREE.MeshBasicMaterial( { color: guiControls.colorMetal, envMap: cubeCamera.renderTarget.texture, combine: THREE.MixOperation, reflectivity: guiControls.reflectivity } );
+      ship.material = new THREE.MeshBasicMaterial( { color: guiControls.colorMetal, envMap: cubeCamera, combine: THREE.MixOperation, reflectivity: guiControls.reflectivity } );
   });
   c_mesh_metal_refl.onChange(function(){
-    ship.material = new THREE.MeshBasicMaterial( { color: guiControls.colorMetal, envMap: cubeCamera.renderTarget.texture, combine: THREE.MixOperation, reflectivity: guiControls.reflectivity } );
+    ship.material = new THREE.MeshBasicMaterial( { color: guiControls.colorMetal, envMap: cubeCamera, combine: THREE.MixOperation, reflectivity: guiControls.reflectivity } );
   });
 
   //scene.add(ship);
